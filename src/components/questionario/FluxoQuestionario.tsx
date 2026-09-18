@@ -786,7 +786,9 @@ function TelaCaptura({
 }
 
 function TelaRelatorio({ relatorio }: { relatorio: RelatorioGratuito }) {
+  const [premiumAviso, setPremiumAviso] = useState(false);
   const canais: { fator: string; rotulo: string; percentil: number; faixa: string }[] = [
+    { fator: "D", rotulo: "Direção", percentil: relatorio.base.D.percentil, faixa: relatorio.base.D.faixa },
     { fator: "D", rotulo: "Direção", percentil: relatorio.base.D.percentil, faixa: relatorio.base.D.faixa },
     { fator: "I", rotulo: "Influência", percentil: relatorio.base.I.percentil, faixa: relatorio.base.I.faixa },
     { fator: "S", rotulo: "Estabilidade", percentil: relatorio.base.S.percentil, faixa: relatorio.base.S.faixa },
@@ -882,9 +884,18 @@ function TelaRelatorio({ relatorio }: { relatorio: RelatorioGratuito }) {
             </li>
           ))}
         </ul>
-        <button className="mt-4 w-full rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white active:scale-95">
+        <button
+          onClick={() => setPremiumAviso(true)}
+          className="mt-4 w-full rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white active:scale-95"
+        >
           Desbloquear relatório completo
         </button>
+        {premiumAviso && (
+          <p className="mt-3 rounded-xl bg-neutral-100 px-4 py-3 text-xs leading-relaxed text-neutral-600">
+            O relatório completo (análise fator a fator, plano de desenvolvimento e comparativo
+            base × expectativa) está na próxima etapa de construção. Em breve você desbloqueia por aqui.
+          </p>
+        )}
       </section>
 
       <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
