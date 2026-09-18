@@ -44,6 +44,13 @@ export function novoStatus(
     : statusAtual;
 }
 
+/** Captura LGPD é a etapa adiante de "expectativa"; nunca regride. */
+export function statusAposCaptura(statusAtual: StatusSessao): StatusSessao {
+  return STATUS_FINAL.has(statusAtual) || statusAtual === "capturada"
+    ? statusAtual
+    : "capturada";
+}
+
 export async function criarSessao(dados: DadosNovaSessao = {}) {
   const db = banco();
   let empresaId: string | null = null;

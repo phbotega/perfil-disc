@@ -11,6 +11,7 @@ import {
   type RespostaLinha,
 } from "@/lib/questionario/intersticios";
 import { aposIntersticio, aposResponder, numeroItem, voltar } from "@/lib/questionario/fluxo";
+import { validarCaptura, type ErrosCaptura, type RelatorioGratuito } from "@/lib/core/relatorio-gratis";
 
 type Fase =
   | "carregando"
@@ -20,7 +21,8 @@ type Fase =
   | "item"
   | "transicao"
   | "intersticio"
-  | "concluido";
+  | "captura"
+  | "relatorio";
 
 interface RespostaLocal {
   simbolo: Simbolo;
@@ -33,7 +35,7 @@ interface Plano {
 }
 
 interface SessaoCarregada {
-  sessao: { id: string };
+  sessao: { id: string; status: string; nome: string | null };
   respostas: { itemCodigo: string; simbolo: Simbolo }[];
   plano: Plano;
 }
@@ -62,6 +64,7 @@ export default function FluxoQuestionario() {
   const [ctx, setCtx] = useState<Contexto>("base");
   const [idx, setIdx] = useState(0);
   const [pausa, setPausa] = useState<Pausa | null>(null);
+  const [relatorio, setRelatorio] = useState<RelatorioGratuito | null>(null);
   const [nome, setNome] = useState("");
   const [identidade, setIdentidade] = useState("");
   const [ilha, setIlha] = useState(false);
@@ -90,7 +93,7 @@ export default function FluxoQuestionario() {
     void retomar();
   }, []);
 
-  const aplicarSessao = (data: SessaoCarregada) => {
+  const aplicarSessao = async (data: SessaoCarregada) => {
     const mapa: Record<string, RespostaLocal> = {};
     for (const r of data.respostas) {
       mapa[r.itemCodigo] = { simbolo: r.simbolo, tempoMs: 0 };
@@ -98,6 +101,20 @@ export default function FluxoQuestionario() {
     setSessaoId(data.sessao.id);
     setPlano(data.plano);
     setRespostas(mapa);
+    if (data.sessao.nome) setNome(data.sessao.nome);
+    if (["capturada", "paga", "concluida"].includes(data.sessao.status)) {
+      try {
+        const res = await fetch(`/api/sessoes/${data.sessao.id}/relatorio-gratuito`);
+        if (res.ok) {
+          const dadosRel = await res.json();
+          setRelatorio(dadosRel.relatorio);
+          setFase("relatorio");
+          return;
+        }
+      } catch {
+        // segue para retomada normal abaixo
+      }
+    }
     const respondidasBase = data.plano.base.filter((id) => mapa[id]).length;
     const respondidasExp = data.plano.expectativa.filter((id) => mapa[id]).length;
     if (respondidasBase < 32) {
@@ -212,7 +229,7 @@ export default function FluxoQuestionario() {
       // Interstício já exibido nesta visita: continua direto no próximo item.
       const alvo = aposIntersticio(pos);
       if (alvo === "concluido") {
-        setFase("concluido");
+        setFase("captura");
         return;
       }
       irParaItem(alvo.ctx, alvo.idx);
@@ -251,10 +268,51 @@ export default function FluxoQuestionario() {
     const alvo = aposIntersticio(pos);
     setPausa(null);
     if (alvo === "concluido") {
-      setFase("concluido");
+      setFase("captura");
       return;
     }
     irParaItem(alvo.ctx, alvo.idx);
+  };
+
+  const concluirCaptura = async (entrada: {
+    email: string;
+    telefone?: string;
+    consentimentoMarketing: boolean;
+    setErros: (e: ErrosCaptura) => void;
+  }) => {
+    const erros = validarCaptura(entrada.email, true);
+    if (erros.email) {
+      entrada.setErros(erros);
+      return;
+    }
+    if (!sessaoId) return;
+    try {
+      const res = await fetch(`/api/sessoes/${sessaoId}/captura`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: nome || undefined,
+          email: entrada.email,
+          telefone: entrada.telefone,
+          consentimentoLgpd: true,
+          consentimentoMarketing: entrada.consentimentoMarketing,
+        }),
+      });
+      if (!res.ok) {
+        const corpo = await res.json().catch(() => ({}));
+        const mensagem =
+          corpo.erro === "questionario_incompleto"
+            ? "Ainda faltam respostas. Recarregue e conclua o questionário."
+            : "Não conseguimos gerar seu resultado. Tente novamente.";
+        entrada.setErros({ geral: mensagem });
+        return;
+      }
+      const corpo = await res.json();
+      setRelatorio(corpo.relatorio as RelatorioGratuito);
+      setFase("relatorio");
+    } catch {
+      entrada.setErros({ geral: "Sem conexão. Verifique sua internet e tente de novo." });
+    }
   };
 
   const voltarNaTela = () => {
@@ -331,8 +389,17 @@ export default function FluxoQuestionario() {
     );
   }
 
-  if (fase === "concluido") {
-    return <TelaConcluido />;
+  if (fase === "captura") {
+    return (
+      <TelaCaptura
+        nomeInicial={nome}
+        onEnviar={(entrada) => concluirCaptura(entrada)}
+      />
+    );
+  }
+
+  if (fase === "relatorio" && relatorio) {
+    return <TelaRelatorio relatorio={relatorio} />;
   }
 
   if (fase === "transicao") {
@@ -605,21 +672,220 @@ function TelaIntersticio({
   );
 }
 
-function TelaConcluido() {
-  const final = mensagemFinal();
+function TelaCaptura({
+  nomeInicial,
+  onEnviar,
+}: {
+  nomeInicial: string;
+  onEnviar: (entrada: {
+    email: string;
+    telefone?: string;
+    consentimentoMarketing: boolean;
+    setErros: (e: ErrosCaptura) => void;
+  }) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [consentimento, setConsentimento] = useState(false);
+  const [marketing, setMarketing] = useState(false);
+  const [erros, setErros] = useState<ErrosCaptura>({});
+  const [enviando, setEnviando] = useState(false);
+
+  const podeEnviar = validarCaptura(email, consentimento).email === undefined && consentimento && !enviando;
+
+  const enviar = () => {
+    if (!podeEnviar) return;
+    setEnviando(true);
+    onEnviar({
+      email,
+      telefone: telefone || undefined,
+      consentimentoMarketing: marketing,
+      setErros: (e) => {
+        setEnviando(false);
+        setErros(e);
+      },
+    });
+  };
+
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10 text-center">
-      <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">Questionário concluído</p>
-      <h1 className="mt-3 text-2xl font-bold">{final.titulo}</h1>
-      <p className="mt-4 text-sm leading-relaxed text-neutral-600">{final.corpo}</p>
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10">
+      <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">Resultado pronto</p>
+      <h1 className="mt-3 text-3xl font-bold leading-tight">
+        Onde enviamos
+        <br />
+        seu resultado?
+      </h1>
+      <p className="mt-3 text-sm leading-relaxed text-neutral-600">
+        {nomeInicial ? `Ótimo, ${nomeInicial.split(" ")[0]}. ` : ""}Seu relatório gratuito fica disponível na
+        hora, direto neste dispositivo — e você recebe uma cópia no e-mail.
+      </p>
+      <label className="mt-6 block text-xs font-semibold text-neutral-500">E-mail (obrigatório)</label>
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        placeholder="voce@exemplo.com"
+        className="mt-1.5 rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-900"
+      />
+      {erros.email && <p className="mt-1 text-xs text-red-600">{erros.email}</p>}
+      <label className="mt-4 block text-xs font-semibold text-neutral-500">Telefone (opcional)</label>
+      <input
+        value={telefone}
+        onChange={(e) => setTelefone(e.target.value)}
+        inputMode="tel"
+        autoComplete="tel"
+        placeholder="(11) 99999-9999"
+        className="mt-1.5 rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-900"
+      />
+      <label className="mt-5 flex items-start gap-3 text-sm text-neutral-700">
+        <input
+          type="checkbox"
+          checked={consentimento}
+          onChange={(e) => setConsentimento(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-neutral-900"
+        />
+        <span>
+          Autorizo o armazenamento e o tratamento dos meus dados para gerar e enviar este
+          resultado, conforme a LGPD. Posso pedir a exclusão a qualquer momento.
+        </span>
+      </label>
+      {erros.consentimento && <p className="mt-1 text-xs text-red-600">{erros.consentimento}</p>}
+      <label className="mt-4 flex items-start gap-3 text-sm text-neutral-700">
+        <input
+          type="checkbox"
+          checked={marketing}
+          onChange={(e) => setMarketing(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-neutral-900"
+        />
+        <span className="text-neutral-500">Quero receber conteúdos sobre desenvolvimento pessoal (opcional)</span>
+      </label>
+      {erros.geral && (
+        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-700">{erros.geral}</p>
+      )}
       <button
-        disabled
-        className="mt-8 cursor-not-allowed rounded-xl bg-neutral-300 px-6 py-4 text-base font-semibold text-neutral-500"
+        onClick={enviar}
+        disabled={!podeEnviar}
+        className="mt-8 rounded-xl bg-neutral-900 px-6 py-4 text-base font-semibold text-white active:scale-95 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
       >
-        Processando… (Etapa 3)
+        {enviando ? "Gerando…" : "Gerar meu resultado"}
       </button>
-      <p className="mt-3 text-[11px] text-neutral-400">
-        Captura de e-mail, relatório gratuito e oferta chegam na etapa 3.
+      <p className="mt-4 text-center text-[11px] leading-relaxed text-neutral-400">
+        Seus dados não são compartilhados com terceiros e são usados apenas para o
+        resultado e para a normatização estatística anônima.
+      </p>
+    </div>
+  );
+}
+
+function TelaRelatorio({ relatorio }: { relatorio: RelatorioGratuito }) {
+  const canais: { fator: string; rotulo: string; percentil: number; faixa: string }[] = [
+    { fator: "D", rotulo: "Direção", percentil: relatorio.base.D.percentil, faixa: relatorio.base.D.faixa },
+    { fator: "I", rotulo: "Influência", percentil: relatorio.base.I.percentil, faixa: relatorio.base.I.faixa },
+    { fator: "S", rotulo: "Estabilidade", percentil: relatorio.base.S.percentil, faixa: relatorio.base.S.faixa },
+    { fator: "C", rotulo: "Conformidade", percentil: relatorio.base.C.percentil, faixa: relatorio.base.C.faixa },
+  ];
+
+  const fraseItp = (() => {
+    switch (relatorio.resumoExpectativa.itpClassificacao) {
+      case "convergencia_alta":
+        return "Grande convergência: o que o entorno pede de você está muito próximo do seu jeito natural.";
+      case "tensao_produtiva":
+        return "Tensão produtiva: há diferenças pontuais entre você e as demandas ao redor — normalmente saudáveis e administráveis.";
+      case "tensao_alta":
+        return "Tensão alta: a expectativa do ambiente destoa do seu jeito natural em várias dimensões. Dá trabalho, mas costuma ser um sinal de crescimento.";
+      default:
+        return "Tensão extrema: as demandas ao redor estão muito distantes do seu estilo base. Vale olhar esse cenário com atenção.";
+    }
+  })();
+
+  return (
+    <div className="mx-auto min-h-dvh max-w-2xl px-4 pb-16 pt-8">
+      <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">Seu resultado</p>
+      <h1 className="mt-2 text-3xl font-bold leading-tight">{relatorio.padraoNome}</h1>
+      <p className="mt-2 text-sm text-neutral-600">{relatorio.comunicacao}</p>
+      {relatorio.perfilCombinado && (
+        <p className="mt-1 text-xs font-medium text-neutral-500">
+          Perfil combinado: {relatorio.dominante} + {relatorio.secundario}
+        </p>
+      )}
+
+      <section className="mt-8">
+        <h2 className="text-sm font-bold text-neutral-800">Movimento natural (base)</h2>
+        <svg viewBox="0 0 400 400" className="mx-auto mt-4 aspect-square w-full max-w-xs">
+          <polygon points="20,380 380,380 380,20 20,20" fill="#f5f5f5" stroke="#e5e5e5" strokeWidth="1" />
+          <line x1="200" y1="20" x2="200" y2="380" stroke="#e5e5e5" strokeWidth="1" />
+          <line x1="20" y1="200" x2="380" y2="200" stroke="#e5e5e5" strokeWidth="1" />
+          <text x="37" y="52" className="fill-neutral-700 text-sm font-bold">D</text>
+          <text x="345" y="52" className="fill-neutral-700 text-sm font-bold">I</text>
+          <text x="350" y="374" className="fill-neutral-700 text-sm font-bold">S</text>
+          <text x="30" y="374" className="fill-neutral-700 text-sm font-bold">C</text>
+          <polygon points={relatorio.quadranteBaseSvg} fill="#18181b" fillOpacity="0.18" stroke="#18181b" strokeWidth="2" />
+        </svg>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-sm font-bold text-neutral-800">Intensidade de cada fator (percentil)</h2>
+        {canais.map((c) => (
+          <div key={c.fator}>
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-neutral-700">
+                {c.rotulo} ({c.fator})
+              </span>
+              <span className="text-neutral-500">
+                {c.percentil}% · {c.faixa}
+              </span>
+            </div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-neutral-200">
+              <div
+                className="h-full rounded-full bg-neutral-900"
+                style={{ width: `${c.percentil}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="mt-8 rounded-2xl bg-neutral-100 p-4">
+        <h2 className="text-sm font-bold text-neutral-800">O que o entorno pede (resumo)</h2>
+        <p className="mt-1 text-sm leading-relaxed text-neutral-700">
+          {relatorio.resumoExpectativa.itpRotulo} (ITP {relatorio.resumoExpectativa.itp}). {fraseItp}
+        </p>
+        {relatorio.resumoExpectativa.ausenciaFeedback && (
+          <p className="mt-2 text-xs text-neutral-500">
+            Não encontramos retornos recorrentes nas suas respostas de expectativa. Isso pode indicar
+            um ambiente sem feedback claro.
+          </p>
+        )}
+      </section>
+
+      {relatorio.qualidade.qualidadeBaixa && (
+        <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          {relatorio.qualidade.notaDiscreta}
+        </p>
+      )}
+
+      <section className="mt-8 rounded-2xl border border-dashed border-neutral-300 p-4">
+        <h2 className="text-sm font-bold text-neutral-800">Desbloqueie seu relatório completo</h2>
+        <ul className="mt-2 space-y-1.5 text-sm text-neutral-600">
+          {relatorio.premium.map((linha) => (
+            <li key={linha} className="flex gap-2">
+              <span className="text-neutral-400">•</span>
+              <span>{linha}</span>
+            </li>
+          ))}
+        </ul>
+        <button className="mt-4 w-full rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white active:scale-95">
+          Desbloquear relatório completo
+        </button>
+      </section>
+
+      <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
+        {relatorio.normaProvisoria
+          ? "Percentis baseados em norma provisória (amostra embutida), até a normalização empírica com N ≥ 500."
+          : "Percentis baseados em norma empírica atualizada."}{" "}
+        Ferramenta de mapeamento comportamental para autoconhecimento. Não constitui avaliação psicológica.
       </p>
     </div>
   );

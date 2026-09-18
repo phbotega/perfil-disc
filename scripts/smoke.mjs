@@ -85,6 +85,54 @@ async function req(method, path, body) {
   const inexistente = await req("GET", "/api/sessoes/00000000-0000-4000-8000-000000000000");
   check("sessao inexistente -> 404", inexistente.status === 404, `status=${inexistente.status}`);
 
+  const capturaPrecoce = await req("POST", `/api/sessoes/${id}/captura`, {
+    email: "smoke@exemplo.com",
+    consentimentoLgpd: true,
+  });
+  check("captura com questionario incompleto -> 409", capturaPrecoce.status === 409, `status=${capturaPrecoce.status}`);
+
+  const relPrecoce = await req("GET", `/api/sessoes/${id}/relatorio-gratuito`);
+  check("relatorio antes da captura -> 409", relPrecoce.status === 409, `status=${relPrecoce.status}`);
+
+  const criada2 = await req("POST", "/api/sessoes", { origem: "smoke", dispositivo: "desktop" });
+  const id2 = criada2.json?.sessaoId;
+  const plano2 = (await req("GET", `/api/sessoes/${id2}`)).json?.plano;
+  for (const cod of plano2.base) {
+    await req("POST", `/api/sessoes/${id2}/respostas`, { itemCodigo: cod, simbolo: "++", tempoMs: 800 });
+  }
+  await req("POST", `/api/sessoes/${id2}/transicao`);
+  for (const cod of plano2.expectativa) {
+    await req("POST", `/api/sessoes/${id2}/respostas`, { itemCodigo: cod, simbolo: "=", tempoMs: 800 });
+  }
+
+  const capturaInvalida = await req("POST", `/api/sessoes/${id2}/captura`, {
+    email: "invalido",
+    consentimentoLgpd: false,
+  });
+  check("captura com email invalido e sem consenso -> 400", capturaInvalida.status === 400, `status=${capturaInvalida.status}`);
+
+  const captura = await req("POST", `/api/sessoes/${id2}/captura`, {
+    nome: "Smoke",
+    email: "smoke.resultado@exemplo.com",
+    telefone: "11999999999",
+    consentimentoLgpd: true,
+    consentimentoMarketing: true,
+  });
+  check("captura completa -> 200", captura.status === 200, `status=${captura.status}`);
+  check("captura retorna leadId", typeof captura.json?.leadId === "string");
+  check("captura retorna relatorio com padrao", typeof captura.json?.relatorio?.padraoNome === "string");
+  check("relatorio tem 4 fatores base", Object.keys(captura.json?.relatorio?.base || {}).length === 4);
+  check("relatorio tem quadrante SVG", String(captura.json?.relatorio?.quadranteBaseSvg || "").split(" ").length === 4);
+  check("relatorio tem resumo da expectativa", typeof captura.json?.relatorio?.resumoExpectativa?.itpRotulo === "string");
+  check("relatorio premia 3 itens premium", (captura.json?.relatorio?.premium || []).length === 3);
+
+  const relDepois = await req("GET", `/api/sessoes/${id2}/relatorio-gratuito`);
+  check("relatorio apos captura -> 200", relDepois.status === 200, `status=${relDepois.status}`);
+  check("relatorio igual ao da captura", relDepois.json?.relatorio?.padraoNome === captura.json?.relatorio?.padraoNome);
+
+  const relSessao = await req("GET", `/api/sessoes/${id2}`);
+  check("sessao agora = capturada", relSessao.json?.sessao?.status === "capturada", `status=${relSessao.json?.sessao?.status}`);
+
   console.log(falhas === 0 ? "\nSMOKE OK" : `\nSMOKE COM ${falhas} FALHA(S)`);
   process.exit(falhas === 0 ? 0 : 1);
 })().catch((e) => {
