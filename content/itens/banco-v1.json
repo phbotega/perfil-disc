@@ -1,0 +1,107 @@
+{
+  "versao": 1,
+  "nome": "banco-itens-disc",
+  "total_itens": 64,
+  "escala": {
+    "tipo": "likert-5-normativa",
+    "opcoes": [
+      { "rotulo": "Concordo totalmente", "simbolo": "++", "valor_bruto": 5 },
+      { "rotulo": "Concordo parcialmente", "simbolo": "+", "valor_bruto": 4 },
+      { "rotulo": "Neutro", "simbolo": "=", "valor_bruto": 3 },
+      { "rotulo": "Discordo parcialmente", "simbolo": "-", "valor_bruto": 2 },
+      { "rotulo": "Discordo totalmente", "simbolo": "--", "valor_bruto": 1 }
+    ]
+  },
+  "contextos": {
+    "base": {
+      "moldura": "No seu dia a dia, na maior parte do tempo...",
+      "fatores": {
+        "D": [
+          { "id": "DB1", "texto": "Assumo a liderança naturalmente quando um grupo está sem direção.", "reverso": false },
+          { "id": "DB2", "texto": "Vou direto ao ponto, mesmo que soe duro.", "reverso": false },
+          { "id": "DB3", "texto": "Gosto de ter controle sobre o resultado final do que faço.", "reverso": false },
+          { "id": "DB4", "texto": "Decido rápido, mesmo sem ter todas as informações.", "reverso": false },
+          { "id": "DB5", "texto": "Encaro confronto de frente em vez de contornar.", "reverso": false },
+          { "id": "DB6", "texto": "Prefiro esperar o consenso do grupo antes de me posicionar.", "reverso": true },
+          { "id": "DB7", "texto": "Metas difíceis demais me deixam mais motivado, não menos.", "reverso": false },
+          { "id": "DB8", "texto": "Tenho dificuldade em dizer não quando me pedem alguma coisa.", "reverso": true }
+        ],
+        "I": [
+          { "id": "IB1", "texto": "Puxar conversa com desconhecidos é fácil e prazeroso para mim.", "reverso": false },
+          { "id": "IB2", "texto": "Penso melhor conversando em voz alta do que sozinho.", "reverso": false },
+          { "id": "IB3", "texto": "Uso histórias e exemplos para convencer as pessoas.", "reverso": false },
+          { "id": "IB4", "texto": "Demonstro entusiasmo abertamente.", "reverso": false },
+          { "id": "IB5", "texto": "Prefiro trabalhar sozinho a trabalhar em grupo.", "reverso": true },
+          { "id": "IB6", "texto": "As pessoas me descrevem como alguém que anima o ambiente.", "reverso": false },
+          { "id": "IB7", "texto": "Guardo minhas opiniões para mim na maior parte das conversas.", "reverso": true },
+          { "id": "IB8", "texto": "Reconhecimento pelo que faço importa bastante para mim.", "reverso": false }
+        ],
+        "S": [
+          { "id": "SB1", "texto": "Prefiro rotinas previsíveis a dias imprevisíveis.", "reverso": false },
+          { "id": "SB2", "texto": "Tenho paciência com quem aprende mais devagar que eu.", "reverso": false },
+          { "id": "SB3", "texto": "Paro o que estou fazendo para ajudar alguém que está afogado de tarefa.", "reverso": false },
+          { "id": "SB4", "texto": "Ouço mais do que falo.", "reverso": false },
+          { "id": "SB5", "texto": "Mudanças bruscas não me incomodam, me estimulam.", "reverso": true },
+          { "id": "SB6", "texto": "Sou leal às pessoas com quem trabalho, mesmo quando isso me custa caro.", "reverso": false },
+          { "id": "SB7", "texto": "Prefiro cooperação a competição.", "reverso": false },
+          { "id": "SB8", "texto": "Me canso rápido de fazer a mesma coisa todo dia.", "reverso": true }
+        ],
+        "C": [
+          { "id": "CB1", "texto": "Antes de decidir, preciso ver os números com calma.", "reverso": false },
+          { "id": "CB2", "texto": "Percebo erros pequenos que a maioria deixa passar.", "reverso": false },
+          { "id": "CB3", "texto": "Prefiro montar um plano a começar e ir ajustando no caminho.", "reverso": false },
+          { "id": "CB4", "texto": "Sigo regras e padrões mesmo quando ninguém está olhando.", "reverso": false },
+          { "id": "CB5", "texto": "Improviso bem e gosto de fazer isso.", "reverso": true },
+          { "id": "CB6", "texto": "Sou exigente e crítico com o meu próprio trabalho.", "reverso": false },
+          { "id": "CB7", "texto": "Prefiro fatos verificáveis à opinião de gente experiente.", "reverso": false },
+          { "id": "CB8", "texto": "Detalhe demais me irrita, prefiro olhar o resultado geral.", "reverso": true }
+        ]
+      }
+    },
+    "expectativa": {
+      "moldura": "Pense nos retornos que você já recebeu de chefe, sócio, equipe, cliente ou família sobre como você deveria ser.",
+      "fatores": {
+        "D": [
+          { "id": "DE1", "texto": "Já me disseram que eu preciso ser mais direto e ir direto ao ponto.", "reverso": false },
+          { "id": "DE2", "texto": "Já ouvi que eu preciso decidir mais rápido.", "reverso": false },
+          { "id": "DE3", "texto": "Me pediram para assumir mais a liderança das situações.", "reverso": false },
+          { "id": "DE4", "texto": "Já me disseram que eu preciso cobrar mais resultado das pessoas.", "reverso": false },
+          { "id": "DE5", "texto": "Já ouvi que eu preciso me impor mais nas discussões.", "reverso": false },
+          { "id": "DE6", "texto": "Já me pediram para pegar mais leve na cobrança.", "reverso": true },
+          { "id": "DE7", "texto": "Já me disseram que eu preciso arriscar mais e esperar menos.", "reverso": false },
+          { "id": "DE8", "texto": "Já me pediram para não atropelar tanto e dar mais espaço aos outros.", "reverso": true }
+        ],
+        "I": [
+          { "id": "IE1", "texto": "Já me disseram que eu preciso me comunicar mais.", "reverso": false },
+          { "id": "IE2", "texto": "Já ouvi que eu preciso circular mais e conhecer mais gente.", "reverso": false },
+          { "id": "IE3", "texto": "Me pediram para demonstrar mais entusiasmo e ânimo.", "reverso": false },
+          { "id": "IE4", "texto": "Já me disseram que eu preciso ser mais político no trato com as pessoas.", "reverso": false },
+          { "id": "IE5", "texto": "Já ouvi que eu preciso vender melhor as minhas ideias.", "reverso": false },
+          { "id": "IE6", "texto": "Já me pediram para falar menos e ouvir mais.", "reverso": true },
+          { "id": "IE7", "texto": "Já me disseram que eu preciso me expor mais e aparecer mais.", "reverso": false },
+          { "id": "IE8", "texto": "Já me pediram para conter o entusiasmo e ser mais contido.", "reverso": true }
+        ],
+        "S": [
+          { "id": "SE1", "texto": "Já me disseram que eu preciso ter mais paciência com as pessoas.", "reverso": false },
+          { "id": "SE2", "texto": "Já ouvi que eu preciso ser mais constante e menos oscilante.", "reverso": false },
+          { "id": "SE3", "texto": "Me pediram para ouvir mais antes de responder.", "reverso": false },
+          { "id": "SE4", "texto": "Já me disseram que eu preciso apoiar mais o time e olhar menos só para a minha parte.", "reverso": false },
+          { "id": "SE5", "texto": "Já ouvi que eu preciso ser mais diplomático e evitar mais o confronto.", "reverso": false },
+          { "id": "SE6", "texto": "Já me pediram para acelerar e parar de esperar tanto.", "reverso": true },
+          { "id": "SE7", "texto": "Já me disseram que eu preciso manter um ritmo mais previsível.", "reverso": false },
+          { "id": "SE8", "texto": "Já me pediram para me incomodar menos com mudança.", "reverso": true }
+        ],
+        "C": [
+          { "id": "CE1", "texto": "Já me disseram que eu preciso ser mais analítico e olhar mais os números.", "reverso": false },
+          { "id": "CE2", "texto": "Já ouvi que eu preciso cuidar melhor dos detalhes.", "reverso": false },
+          { "id": "CE3", "texto": "Me pediram para planejar mais antes de começar.", "reverso": false },
+          { "id": "CE4", "texto": "Já me disseram que eu preciso seguir mais o processo e a documentação.", "reverso": false },
+          { "id": "CE5", "texto": "Já ouvi que eu preciso revisar melhor antes de entregar.", "reverso": false },
+          { "id": "CE6", "texto": "Já me pediram para soltar mais e não travar tanto no detalhe.", "reverso": true },
+          { "id": "CE7", "texto": "Já me disseram que eu preciso ser mais organizado.", "reverso": false },
+          { "id": "CE8", "texto": "Já me pediram para decidir sem esperar ter todos os dados.", "reverso": true }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "versao": 1,
+  "provisoria": true,
+  "observacao": "Norma provisória de lançamento. Substituída automaticamente por normas empíricas quando a amostra validada atingir N >= 500. Os dois contextos têm tabelas normativas separadas.",
+  "criteria": {
+    "amostra_minima": 500,
+    "contextos_separados": true
+  },
+  "por_contexto": {
+    "base": {
+      "D": { "media": 24, "desvio": 5.5, "n": 0 },
+      "I": { "media": 24, "desvio": 5.5, "n": 0 },
+      "S": { "media": 24, "desvio": 5.5, "n": 0 },
+      "C": { "media": 24, "desvio": 5.5, "n": 0 }
+    },
+    "expectativa": {
+      "D": { "media": 24, "desvio": 5.5, "n": 0 },
+      "I": { "media": 24, "desvio": 5.5, "n": 0 },
+      "S": { "media": 24, "desvio": 5.5, "n": 0 },
+      "C": { "media": 24, "desvio": 5.5, "n": 0 }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "versao": 1,
+  "nota": "Gradiente de adjetivos do alto para o baixo. Alto não significa bom e baixo não significa ruim: cada posição descreve preferências, não nível de competência.",
+  "linhas": [
+    { "posicao": 1, "D": "Exigente", "I": "Expressivo", "S": "Constante", "C": "Rigoroso" },
+    { "posicao": 2, "D": "Decidido", "I": "Persuasivo", "S": "Paciente", "C": "Meticuloso" },
+    { "posicao": 3, "D": "Enérgico", "I": "Entusiasta", "S": "Previsível", "C": "Sistemático" },
+    { "posicao": 4, "D": "Ousado", "I": "Sociável", "S": "Leal", "C": "Analítico" },
+    { "posicao": 5, "D": "Direto", "I": "Comunicativo", "S": "Acolhedor", "C": "Preciso" },
+    { "posicao": 6, "D": "Competitivo", "I": "Caloroso", "S": "Regular", "C": "Metódico" },
+    { "posicao": 7, "D": "Assertivo", "I": "Aberto", "S": "Adaptável", "C": "Criterioso" },
+    { "posicao": 8, "D": "Ponderado", "I": "Seletivo", "S": "Inquieto", "C": "Pragmático" },
+    { "posicao": 9, "D": "Colaborativo", "I": "Contido", "S": "Acelerado", "C": "Flexível" },
+    { "posicao": 10, "D": "Cauteloso", "I": "Reservado", "S": "Espontâneo", "C": "Informal" },
+    { "posicao": 11, "D": "Conciliador", "I": "Discreto", "S": "Impaciente", "C": "Improvisador" },
+    { "posicao": 12, "D": "Recuado", "I": "Distante", "S": "Impetuoso", "C": "Contestador" }
+  ]
+}
