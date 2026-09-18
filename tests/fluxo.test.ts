@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aposResponder,
   aposIntersticio,
+  destinoDeRetomada,
   numeroItem,
   voltar,
   PRIMEIRO_ITEM_EXPECTATIVA,
@@ -79,5 +80,35 @@ describe("sequência do funil de questionário (64 itens)", () => {
     expect(numeroItem({ ctx: "base", idx: 15 })).toBe(16);
     expect(numeroItem({ ctx: "expectativa", idx: 7 })).toBe(40);
     expect(numeroItem({ ctx: "expectativa", idx: 31 })).toBe(64);
+  });
+});
+
+describe("destino de retomada", () => {
+  it("retoma no meio do bloco base", () => {
+    expect(destinoDeRetomada({ respondidasBase: 5, respondidasExpectativa: 0, totalBase: 32, totalExpectativa: 32 })).toEqual({
+      tipo: "item",
+      ctx: "base",
+      idx: 5,
+    });
+  });
+
+  it("base completa e expectativa não iniciada volta para a transição", () => {
+    expect(destinoDeRetomada({ respondidasBase: 32, respondidasExpectativa: 0, totalBase: 32, totalExpectativa: 32 })).toEqual({
+      tipo: "transicao",
+    });
+  });
+
+  it("retoma no meio da expectativa", () => {
+    expect(destinoDeRetomada({ respondidasBase: 32, respondidasExpectativa: 10, totalBase: 32, totalExpectativa: 32 })).toEqual({
+      tipo: "item",
+      ctx: "expectativa",
+      idx: 10,
+    });
+  });
+
+  it("todas respondidas sem captura vai para a captura (não rompe no item 32)", () => {
+    expect(destinoDeRetomada({ respondidasBase: 32, respondidasExpectativa: 32, totalBase: 32, totalExpectativa: 32 })).toEqual({
+      tipo: "captura",
+    });
   });
 });

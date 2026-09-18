@@ -51,3 +51,26 @@ export function voltar(p: Posicao): Posicao | "transicao" | null {
 /** Voltar a partir da tela de transição -> último item do bloco base. */
 export const ULTIMO_ITEM_BASE: Posicao = { ctx: "base", idx: 31 };
 export const PRIMEIRO_ITEM_EXPECTATIVA: Posicao = { ctx: "expectativa", idx: 0 };
+
+export type DestinoRetomada =
+  | { tipo: "item"; ctx: Contexto; idx: number }
+  | { tipo: "transicao" }
+  | { tipo: "captura" };
+
+/**
+ * Para onde a sessão retomada deve ir. Com base completa e expectativa completa
+ * ainda não capturada, o usuário precisa da tela de captura (não de um item
+ * inexistente no índice 32).
+ */
+export function destinoDeRetomada(args: {
+  respondidasBase: number;
+  respondidasExpectativa: number;
+  totalBase: number;
+  totalExpectativa: number;
+}): DestinoRetomada {
+  const { respondidasBase: b, respondidasExpectativa: e, totalBase, totalExpectativa } = args;
+  if (b < totalBase) return { tipo: "item", ctx: "base", idx: b };
+  if (e === 0) return { tipo: "transicao" };
+  if (e < totalExpectativa) return { tipo: "item", ctx: "expectativa", idx: e };
+  return { tipo: "captura" };
+}

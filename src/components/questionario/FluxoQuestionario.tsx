@@ -10,7 +10,7 @@ import {
   mensagemFinal,
   type RespostaLinha,
 } from "@/lib/questionario/intersticios";
-import { aposIntersticio, aposResponder, numeroItem, voltar } from "@/lib/questionario/fluxo";
+import { aposIntersticio, aposResponder, destinoDeRetomada, numeroItem, ULTIMO_ITEM_BASE, voltar } from "@/lib/questionario/fluxo";
 import { validarCaptura, type ErrosCaptura, type RelatorioGratuito } from "@/lib/core/relatorio-gratis";
 
 type Fase =
@@ -117,19 +117,25 @@ export default function FluxoQuestionario() {
     }
     const respondidasBase = data.plano.base.filter((id) => mapa[id]).length;
     const respondidasExp = data.plano.expectativa.filter((id) => mapa[id]).length;
-    if (respondidasBase < 32) {
-      setCtx("base");
-      setIdx(respondidasBase);
-      setFase("item");
-    } else if (respondidasExp > 0) {
-      setCtx("expectativa");
-      setIdx(respondidasExp);
-      setFase("item");
-    } else {
-      setCtx("base");
-      setIdx(31);
-      setFase("transicao");
+    const destino = destinoDeRetomada({
+      respondidasBase,
+      respondidasExpectativa: respondidasExp,
+      totalBase: data.plano.base.length,
+      totalExpectativa: data.plano.expectativa.length,
+    });
+    if (destino.tipo === "captura") {
+      setFase("captura");
+      return;
     }
+    if (destino.tipo === "transicao") {
+      setCtx("base");
+      setIdx(ULTIMO_ITEM_BASE.idx);
+      setFase("transicao");
+      return;
+    }
+    setCtx(destino.ctx);
+    setIdx(destino.idx);
+    setFase("item");
   };
 
   const iniciar = async (codigoEmpresa?: string) => {
