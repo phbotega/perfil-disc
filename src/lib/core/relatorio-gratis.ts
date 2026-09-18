@@ -38,6 +38,14 @@ const NOME_POR_FATOR: Record<Fator, string> = {
   C: "Conformidade",
 };
 
+export function comunicacaoDeResultado(resultado: ResultadoPerfil): string {
+  const estilo = COMUNICACAO_POR_FATOR[resultado.dominante];
+  if (!resultado.perfilCombinado || !resultado.secundario) {
+    return `Seu traço mais forte é ${NOME_POR_FATOR[resultado.dominante]} (${resultado.dominante}). Em comunicação, você ${estilo}`;
+  }
+  return `Seu traço mais forte é ${NOME_POR_FATOR[resultado.dominante]} (${resultado.dominante}), com contribuição de ${NOME_POR_FATOR[resultado.secundario]} (${resultado.secundario}). Em comunicação, você ${estilo}`;
+}
+
 /**
  * Recorte gratuito do resultado: perfil + grafo da base + resumo qualitativo
  * da expectativa. Os detalhes fator a fator da expectativa e os gradientes
@@ -56,13 +64,7 @@ export function montarRelatorioGratuito(resultado: ResultadoPerfil): RelatorioGr
   const percentisBase = {} as Record<Fator, number>;
   for (const fator of FATORES) percentisBase[fator] = resultado.escoresBase[fator].percentil;
 
-  const comunicacao = (() => {
-    const estilo = COMUNICACAO_POR_FATOR[resultado.dominante];
-    if (!resultado.perfilCombinado || !resultado.secundario) {
-      return `Seu traço mais forte é ${NOME_POR_FATOR[resultado.dominante]} (${resultado.dominante}). Em comunicação, você ${estilo}`;
-    }
-    return `Seu traço mais forte é ${NOME_POR_FATOR[resultado.dominante]} (${resultado.dominante}), com contribuição de ${NOME_POR_FATOR[resultado.secundario]} (${resultado.secundario}). Em comunicação, você ${estilo}`;
-  })();
+  const comunicacao = comunicacaoDeResultado(resultado);
 
   return {
     padraoCodigo: resultado.padraoCodigo,

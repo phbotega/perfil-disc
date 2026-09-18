@@ -12,6 +12,7 @@ import {
 } from "@/lib/questionario/intersticios";
 import { aposIntersticio, aposResponder, destinoDeRetomada, numeroItem, ULTIMO_ITEM_BASE, voltar } from "@/lib/questionario/fluxo";
 import { validarCaptura, type ErrosCaptura, type RelatorioGratuito } from "@/lib/core/relatorio-gratis";
+import type { RelatorioCompleto } from "@/lib/core/relatorio-completo";
 
 type Fase =
   | "carregando"
@@ -22,7 +23,8 @@ type Fase =
   | "transicao"
   | "intersticio"
   | "captura"
-  | "relatorio";
+  | "relatorio"
+  | "completo";
 
 interface RespostaLocal {
   simbolo: Simbolo;
@@ -65,6 +67,7 @@ export default function FluxoQuestionario() {
   const [idx, setIdx] = useState(0);
   const [pausa, setPausa] = useState<Pausa | null>(null);
   const [relatorio, setRelatorio] = useState<RelatorioGratuito | null>(null);
+  const [relatorioCompleto, setRelatorioCompleto] = useState<RelatorioCompleto | null>(null);
   const [nome, setNome] = useState("");
   const [identidade, setIdentidade] = useState("");
   const [ilha, setIlha] = useState(false);
@@ -321,6 +324,20 @@ export default function FluxoQuestionario() {
     }
   };
 
+  const desbloquearCompleto = async () => {
+    if (!sessaoId) return;
+    try {
+      const res = await fetch(`/api/sessoes/${sessaoId}/relatorio-completo`);
+      if (!res.ok) return;
+      const corpo = await res.json();
+      setRelatorioCompleto(corpo.relatorio as RelatorioCompleto);
+      setFase("completo");
+    } catch {
+      setErro("Não conseguimos abrir o relatório completo. Tente novamente.");
+      setFase("erro");
+    }
+  };
+
   const voltarNaTela = () => {
     if (fase === "item") {
       const alvo = voltar({ ctx, idx });
@@ -405,7 +422,21 @@ export default function FluxoQuestionario() {
   }
 
   if (fase === "relatorio" && relatorio) {
-    return <TelaRelatorio relatorio={relatorio} />;
+    return (
+      <TelaRelatorio
+        relatorio={relatorio}
+        onDesbloquear={desbloquearCompleto}
+      />
+    );
+  }
+
+  if (fase === "completo" && relatorioCompleto) {
+    return (
+      <TelaRelatorioCompleto
+        relatorio={relatorioCompleto}
+        onVoltar={() => setFase("relatorio")}
+      />
+    );
   }
 
   if (fase === "transicao") {
@@ -785,8 +816,13 @@ function TelaCaptura({
   );
 }
 
-function TelaRelatorio({ relatorio }: { relatorio: RelatorioGratuito }) {
-  const [premiumAviso, setPremiumAviso] = useState(false);
+function TelaRelatorio({
+  relatorio,
+  onDesbloquear,
+}: {
+  relatorio: RelatorioGratuito;
+  onDesbloquear: () => void;
+}) {
   const canais: { fator: string; rotulo: string; percentil: number; faixa: string }[] = [
     { fator: "D", rotulo: "Direção", percentil: relatorio.base.D.percentil, faixa: relatorio.base.D.faixa },
     { fator: "D", rotulo: "Direção", percentil: relatorio.base.D.percentil, faixa: relatorio.base.D.faixa },
@@ -885,18 +921,195 @@ function TelaRelatorio({ relatorio }: { relatorio: RelatorioGratuito }) {
           ))}
         </ul>
         <button
-          onClick={() => setPremiumAviso(true)}
+          onClick={onDesbloquear}
           className="mt-4 w-full rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white active:scale-95"
         >
           Desbloquear relatório completo
         </button>
-        {premiumAviso && (
-          <p className="mt-3 rounded-xl bg-neutral-100 px-4 py-3 text-xs leading-relaxed text-neutral-600">
-            O relatório completo (análise fator a fator, plano de desenvolvimento e comparativo
-            base × expectativa) está na próxima etapa de construção. Em breve você desbloqueia por aqui.
+      </section>
+
+      <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
+        {relatorio.normaProvisoria
+          ? "Percentis baseados em norma provisória (amostra embutida), até a normalização empírica com N ≥ 500."
+          : "Percentis baseados em norma empírica atualizada."}{" "}
+        Ferramenta de mapeamento comportamental para autoconhecimento. Não constitui avaliação psicológica.
+      </p>
+    </div>
+  );
+}
+
+function TelaRelatorioCompleto({
+  relatorio,
+  onVoltar,
+}: {
+  relatorio: RelatorioCompleto;
+  onVoltar: () => void;
+}) {
+  const badgeDirecao: Record<string, { texto: string; classe: string }> = {
+    pedem_mais: { texto: "pedem mais", classe: "bg-neutral-900 text-white" },
+    pedem_menos: { texto: "pedem menos", classe: "bg-neutral-200 text-neutral-800" },
+    neutro: { texto: "sem cobrança", classe: "bg-neutral-100 text-neutral-500" },
+  };
+
+  return (
+    <div className="mx-auto min-h-dvh max-w-2xl px-4 pb-16 pt-8">
+      <button
+        onClick={onVoltar}
+        aria-label="Voltar ao resumo"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 active:scale-90"
+      >
+        ←
+      </button>
+      <p className="mt-4 text-xs font-bold uppercase tracking-widest text-neutral-400">Relatório completo</p>
+      <h1 className="mt-2 text-3xl font-bold leading-tight">{relatorio.padraoNome}</h1>
+      <p className="mt-2 text-sm text-neutral-600">{relatorio.comunicacao}</p>
+      {relatorio.perfilCombinado && relatorio.secundario && (
+        <p className="mt-1 text-xs font-medium text-neutral-500">
+          Perfil combinado: {relatorio.dominante} + {relatorio.secundario}
+        </p>
+      )}
+
+      <section className="mt-8 rounded-2xl bg-neutral-100 p-4">
+        <h2 className="text-sm font-bold text-neutral-800">
+          O que o entorno pede · {relatorio.resumo.itpRotulo}
+          <span className="ml-1 font-normal text-neutral-500">(ITP {relatorio.resumo.itp})</span>
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-neutral-700">{relatorio.resumo.frase}</p>
+        {relatorio.resumo.ausenciaFeedback && (
+          <p className="mt-2 text-xs text-neutral-500">
+            Não encontramos retornos recorrentes nas respostas de expectativa — sinal de ambiente com
+            pouco feedback claro.
           </p>
         )}
       </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-bold text-neutral-800">Você (base) × Expectativa</h2>
+        <svg viewBox="0 0 400 400" className="mx-auto mt-4 aspect-square w-full max-w-xs">
+          <polygon points="20,380 380,380 380,20 20,20" fill="#fafafa" stroke="#e5e5e5" strokeWidth="1" />
+          <line x1="200" y1="20" x2="200" y2="380" stroke="#e5e5e5" strokeWidth="1" />
+          <line x1="20" y1="200" x2="380" y2="200" stroke="#e5e5e5" strokeWidth="1" />
+          <text x="37" y="52" className="fill-neutral-700 text-sm font-bold">D</text>
+          <text x="345" y="52" className="fill-neutral-700 text-sm font-bold">I</text>
+          <text x="350" y="374" className="fill-neutral-700 text-sm font-bold">S</text>
+          <text x="30" y="374" className="fill-neutral-700 text-sm font-bold">C</text>
+          <polygon
+            points={relatorio.quadranteExpectativaSvg}
+            fill="#d6e4ff"
+            fillOpacity="0.5"
+            stroke="#3b82f6"
+            strokeWidth="2"
+          />
+          <polygon points={relatorio.quadranteBaseSvg} fill="#18181b" fillOpacity="0.16" stroke="#18181b" strokeWidth="2" />
+        </svg>
+        <div className="mt-3 flex justify-center gap-5 text-xs text-neutral-500">
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-neutral-900" /> Você (base)
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-400" /> Expectativa
+          </span>
+        </div>
+      </section>
+
+      <section className="mt-8 space-y-4">
+        <h2 className="text-sm font-bold text-neutral-800">Comparativo fator a fator</h2>
+        {relatorio.fatores.map((f) => {
+          const badge = badgeDirecao[f.direcao];
+          return (
+            <div key={f.fator} className="rounded-2xl border border-neutral-200 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-neutral-900">
+                  {f.rotulo} ({f.fator})
+                </span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.classe}`}>
+                  {badge.texto}
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-xl bg-neutral-100 p-3">
+                  <p className="font-semibold text-neutral-500">Você ({f.rotulo})</p>
+                  <p className="mt-1 text-lg font-bold text-neutral-900">{f.basePercentil}%</p>
+                  <p className="text-neutral-500">{f.baseFaixa} · {f.baseAdjetivo}</p>
+                </div>
+                <div className="rounded-xl bg-blue-50 p-3">
+                  <p className="font-semibold text-blue-700">Expectativa</p>
+                  <p className="mt-1 text-lg font-bold text-neutral-900">{f.expectativaPercentil}%</p>
+                  <p className="text-blue-600">{f.expectativaFaixa} · {f.expectativaAdjetivo}</p>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-neutral-600">
+                <span className="font-semibold text-neutral-800">Delta: </span>
+                {f.delta > 0 ? `+${f.delta}` : f.delta} pontos
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-700">{f.leitura}</p>
+            </div>
+          );
+        })}
+      </section>
+
+      <section className="mt-8 space-y-2">
+        <h2 className="text-sm font-bold text-neutral-800">Gradiente de comportamentos</h2>
+        {relatorio.gradiente.map((g) => (
+          <div key={g.fator} className="rounded-2xl bg-neutral-100 p-4">
+            <p className="text-xs font-bold text-neutral-700">
+              {g.fator} · do alto para o baixo
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+              {g.adjetivos.map((adj, i) => (
+                <div
+                  key={adj}
+                  className={`flex items-center gap-2 text-xs ${
+                    i === g.posicaoBase
+                      ? "font-bold text-neutral-900"
+                      : i === g.posicaoExpectativa
+                        ? "font-semibold text-blue-700"
+                        : "text-neutral-500"
+                  }`}
+                >
+                  <span className="w-3 text-right tabular-nums">{i + 1}</span>
+                  <span>{adj}</span>
+                  {i === g.posicaoBase && <span className="ml-auto text-neutral-400">você</span>}
+                  {i === g.posicaoExpectativa && <span className="ml-auto text-blue-600">expectativa</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-bold text-neutral-800">Plano de desenvolvimento</h2>
+        <ol className="mt-3 space-y-3">
+          {relatorio.plano.map((passo, i) => (
+            <li key={passo.titulo} className="flex gap-3 rounded-2xl bg-neutral-100 p-4">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
+                {i + 1}
+              </span>
+              <div>
+                <p className="text-sm font-bold text-neutral-900">
+                  {passo.titulo} <span className="font-medium text-neutral-400">({passo.fator})</span>
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-neutral-600">{passo.descricao}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {relatorio.qualidade.sinais.length > 0 && (
+        <section className="mt-8 rounded-2xl border border-neutral-200 p-4">
+          <h2 className="text-sm font-bold text-neutral-800">Sinais de atenção no preenchimento</h2>
+          <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-neutral-600">
+            {relatorio.qualidade.sinais.map((s) => (
+              <li key={s.codigo} className="flex gap-2">
+                <span className="text-neutral-400">—</span>
+                <span>{s.frase}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
         {relatorio.normaProvisoria

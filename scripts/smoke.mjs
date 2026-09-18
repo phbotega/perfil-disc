@@ -130,6 +130,16 @@ async function req(method, path, body) {
   check("relatorio apos captura -> 200", relDepois.status === 200, `status=${relDepois.status}`);
   check("relatorio igual ao da captura", relDepois.json?.relatorio?.padraoNome === captura.json?.relatorio?.padraoNome);
 
+  const completoAntes = await req("GET", `/api/sessoes/${id}/relatorio-completo`);
+  check("completo antes da captura -> 409", completoAntes.status === 409, `status=${completoAntes.status}`);
+
+  const completo = await req("GET", `/api/sessoes/${id2}/relatorio-completo`);
+  check("completo apos captura -> 200", completo.status === 200, `status=${completo.status}`);
+  check("completo tem 4 fatores comparativos", (completo.json?.relatorio?.fatores || []).length === 4);
+  check("completo tem gradiente por fator", (completo.json?.relatorio?.gradiente || []).length === 4);
+  check("completo tem plano de desenvolvimento", (completo.json?.relatorio?.plano || []).length >= 1);
+  check("completo cita rotulos de fator", typeof completo.json?.relatorio?.fatores?.[0]?.rotulo === "string");
+
   const relSessao = await req("GET", `/api/sessoes/${id2}`);
   check("sessao agora = capturada", relSessao.json?.sessao?.status === "capturada", `status=${relSessao.json?.sessao?.status}`);
 

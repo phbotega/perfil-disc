@@ -207,13 +207,19 @@ export async function registrarCapturaEresultado(
   };
 }
 
-/** Relatório já persistido para retomada (null se ainda não capturado). */
-export async function relatorioDeSessao(sessaoId: string): Promise<RelatorioGratuito | null> {
+/** ResultadoPerfil já persistido para retomada (null se ainda não capturado). */
+export async function resultadoPerfilDeSessao(sessaoId: string): Promise<ResultadoPerfil | null> {
   const linhas = await banco()
     .select()
     .from(resultados)
     .where(eq(resultados.sessaoId, sessaoId))
     .limit(1);
   if (!linhas[0]) return null;
-  return montarRelatorioGratuito(resultadoDaLinha(linhas[0]));
+  return resultadoDaLinha(linhas[0]);
+}
+
+/** Relatório já persistido para retomada (null se ainda não capturado). */
+export async function relatorioDeSessao(sessaoId: string): Promise<RelatorioGratuito | null> {
+  const resultado = await resultadoPerfilDeSessao(sessaoId);
+  return resultado ? montarRelatorioGratuito(resultado) : null;
 }
