@@ -516,10 +516,10 @@ function TelaItem({
         >
           ←
         </button>
-        <span className="text-xs font-medium text-neutral-500">
+        <span className="text-sm font-medium text-neutral-500">
           {respondidas}/64 respondidas
         </span>
-        <span className="inline-flex w-9 justify-center text-xs tabular-nums text-neutral-500">
+        <span className="inline-flex w-9 justify-center text-sm tabular-nums text-neutral-500">
           {String(cronometro).padStart(2, "0")}
         </span>
       </div>
@@ -529,10 +529,10 @@ function TelaItem({
           style={{ width: `${(respondidas / 64) * 100}%` }}
         />
       </div>
-      <p className="sticky top-0 z-10 my-5 rounded-xl bg-neutral-100 px-4 py-2.5 text-[11px] font-medium leading-snug text-neutral-600">
+      <p className="sticky top-0 z-10 my-5 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-medium leading-snug text-neutral-600">
         {moldura}
       </p>
-      <p className="text-xs font-semibold text-neutral-400">Afirmação {numeracao} de 64</p>
+      <p className="text-sm font-semibold text-neutral-400">Afirmação {numeracao} de 64</p>
       <h2 className="mt-2 min-h-28 text-xl font-semibold leading-snug text-neutral-900">
         {item.texto}
       </h2>
@@ -586,7 +586,7 @@ function TelaAbertura({ onIniciar }: { onIniciar: (codigoEmpresa?: string) => vo
       >
         Começar
       </button>
-      <p className="mt-4 text-center text-[11px] leading-relaxed text-neutral-400">
+      <p className="mt-4 text-center text-xs leading-relaxed text-neutral-400">
         Ferramenta de mapeamento comportamental para autoconhecimento e
         desenvolvimento. Não constitui avaliação psicológica.
       </p>
@@ -810,7 +810,7 @@ function TelaCaptura({
       >
         {enviando ? "Gerando…" : "Gerar meu resultado"}
       </button>
-      <p className="mt-4 text-center text-[11px] leading-relaxed text-neutral-400">
+      <p className="mt-4 text-center text-xs leading-relaxed text-neutral-400">
         Seus dados não são compartilhados com terceiros e são usados apenas para o
         resultado e para a normatização estatística anônima.
       </p>
@@ -945,7 +945,7 @@ function TelaRelatorio({
         )}
       </section>
 
-      <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
+      <p className="mt-8 text-center text-xs leading-relaxed text-neutral-400">
         {relatorio.normaProvisoria
           ? "Percentis baseados em norma provisória (amostra embutida), até a normalização empírica com N ≥ 500."
           : "Percentis baseados em norma empírica atualizada."}{" "}
@@ -1128,7 +1128,7 @@ function TelaRelatorioCompleto({
         </section>
       )}
 
-      <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
+      <p className="mt-8 text-center text-xs leading-relaxed text-neutral-400">
         {relatorio.normaProvisoria
           ? "Percentis baseados em norma provisória (amostra embutida), até a normalização empírica com N ≥ 500."
           : "Percentis baseados em norma empírica atualizada."}{" "}
