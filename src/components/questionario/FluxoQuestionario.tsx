@@ -324,17 +324,19 @@ export default function FluxoQuestionario() {
     }
   };
 
-  const desbloquearCompleto = async () => {
-    if (!sessaoId) return;
+  const desbloquearCompleto = async (): Promise<boolean> => {
+    if (!sessaoId) return false;
     try {
-      const res = await fetch(`/api/sessoes/${sessaoId}/relatorio-completo`);
-      if (!res.ok) return;
+      const res = await fetch(`/api/sessoes/${sessaoId}/relatorio-completo`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return false;
       const corpo = await res.json();
       setRelatorioCompleto(corpo.relatorio as RelatorioCompleto);
       setFase("completo");
+      return true;
     } catch {
-      setErro("Não conseguimos abrir o relatório completo. Tente novamente.");
-      setFase("erro");
+      return false;
     }
   };
 
@@ -821,8 +823,19 @@ function TelaRelatorio({
   onDesbloquear,
 }: {
   relatorio: RelatorioGratuito;
-  onDesbloquear: () => void;
+  onDesbloquear: () => Promise<boolean>;
 }) {
+  const [desbloqueando, setDesbloqueando] = useState(false);
+  const [erroDesbloqueio, setErroDesbloqueio] = useState<string | null>(null);
+  const clicarDesbloquear = async () => {
+    setDesbloqueando(true);
+    setErroDesbloqueio(null);
+    const ok = await onDesbloquear();
+    setDesbloqueando(false);
+    if (!ok) {
+      setErroDesbloqueio("Não deu para abrir agora. Recarregue a página e tente novamente.");
+    }
+  };
   const canais: { fator: string; rotulo: string; percentil: number; faixa: string }[] = [
     { fator: "D", rotulo: "Direção", percentil: relatorio.base.D.percentil, faixa: relatorio.base.D.faixa },
     { fator: "D", rotulo: "Direção", percentil: relatorio.base.D.percentil, faixa: relatorio.base.D.faixa },
@@ -921,11 +934,15 @@ function TelaRelatorio({
           ))}
         </ul>
         <button
-          onClick={onDesbloquear}
-          className="mt-4 w-full rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white active:scale-95"
+          onClick={clicarDesbloquear}
+          disabled={desbloqueando}
+          className="mt-4 w-full rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white active:scale-95 disabled:bg-neutral-300"
         >
-          Desbloquear relatório completo
+          {desbloqueando ? "Abrindo…" : "Desbloquear relatório completo"}
         </button>
+        {erroDesbloqueio && (
+          <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-700">{erroDesbloqueio}</p>
+        )}
       </section>
 
       <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
